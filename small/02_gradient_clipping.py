@@ -39,6 +39,7 @@ import numpy as np
 
 (x, y), _ = keras.datasets.mnist.load_data()
 x = x / 255
+N, L = {}, {}
 
 for clip in [None, 1.0]:
     keras.utils.set_random_seed(42)
@@ -62,10 +63,17 @@ for clip in [None, 1.0]:
         losses.append(float(loss))
         opt.apply_gradients(zip(g, m.trainable_variables))
 
-    plt.subplot(1, 2, 1, title="gradient norm", yscale="log").plot(
-        norms, label=str(clip)
-    )
-    plt.subplot(1, 2, 2, title="loss").plot(losses, label=str(clip))
+    N[clip], L[clip] = norms, losses
 
+for clip in N:
+    plt.plot(N[clip], label=f"clipnorm={clip}")
+plt.yscale("log")
+plt.title("gradient norm")
+plt.legend()
+plt.show()
+
+for clip in L:
+    plt.plot(L[clip], label=f"clipnorm={clip}")
+plt.title("loss")
 plt.legend()
 plt.show()

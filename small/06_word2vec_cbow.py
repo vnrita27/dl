@@ -3,6 +3,7 @@ from keras import layers
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
 
 corpus = [
     "the king rules the kingdom with the queen",
@@ -20,15 +21,16 @@ corpus = [
     "the computer runs python code",
     "deep learning runs on a computer with a gpu",
 ]
-words = sorted(set(" ".join(corpus).split()))
-print(words)
-idx = {w: i + 1 for i, w in enumerate(words)}
-print(idx)
-V, W = len(words) + 1, 2
+
+
+vec = layers.TextVectorization()
+vec.adapt(corpus)
+words = [str(w) for w in vec.get_vocabulary()[2:]]
+V, W = vec.vocabulary_size(), 2
 
 X, Y = [], []
-for s in corpus:
-    t = [idx[w] for w in s.split()]
+for row in vec(corpus).numpy():
+    t = row[row > 0]
     for i in range(len(t)):
         X.append(
             [t[j] if 0 <= j < len(t) else 0 for j in range(i - W, i + W + 1) if j != i]
@@ -45,10 +47,19 @@ m = keras.Sequential(
 m.compile("adam", "sparse_categorical_crossentropy")
 m.fit(np.array(X), np.array(Y), epochs=300, verbose=0)
 
-emb = m.layers[0].get_weights()[0][1:]
+emb = m.layers[0].get_weights()[0][2:]
 np.save("cbow.npy", emb)
+
 p = PCA(2).fit_transform(emb)
 plt.scatter(*p.T)
 for w, xy in zip(words, p):
     plt.annotate(w, xy)
+plt.title("PCA")
+plt.show()
+
+p = TSNE(2, perplexity=10, random_state=42).fit_transform(emb)
+plt.scatter(*p.T)
+for w, xy in zip(words, p):
+    plt.annotate(w, xy)
+plt.title("t-SNE")
 plt.show()
